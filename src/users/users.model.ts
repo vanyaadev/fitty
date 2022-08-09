@@ -1,3 +1,4 @@
+import { IsEmail, IsString, Length } from 'class-validator';
 import {
   BelongsToMany,
   Column,
@@ -5,6 +6,7 @@ import {
   Model,
   Table,
 } from 'sequelize-typescript';
+import { HasManyAddAssociationMixin } from 'sequelize/types';
 import { Role } from 'src/roles/roles.model';
 import { UserRoles } from 'src/roles/user-roles.model';
 
@@ -14,8 +16,22 @@ interface UserCreationAttrs {
 }
 
 export class CreateUserDto {
+  @IsString()
+  @IsEmail({}, { message: 'incorrect email' })
   readonly email: string;
+  @IsString()
+  @Length(4, 16, { message: '4..16' })
   readonly password: string;
+}
+
+export class AddRoleDto {
+  readonly value: string;
+  readonly userId: number;
+}
+
+export class BanUserDto {
+  readonly userId: number;
+  readonly banReason: string;
 }
 
 @Table({ tableName: 'users' })
@@ -48,7 +64,7 @@ export class User extends Model<User, UserCreationAttrs> {
   banned: boolean;
 
   @Column({
-    type: DataType.BOOLEAN,
+    type: DataType.STRING,
     defaultValue: false,
     allowNull: true,
   })
@@ -56,4 +72,6 @@ export class User extends Model<User, UserCreationAttrs> {
 
   @BelongsToMany(() => Role, () => UserRoles)
   roles: Role[];
+
+  declare addRole: HasManyAddAssociationMixin<Role, number>;
 }
