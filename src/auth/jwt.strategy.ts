@@ -1,30 +1,30 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { Request as RequestType } from 'express';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private authService: AuthService) {
+  constructor() {
     super({
-      // usernameField: 'email',
-      jwtFromRequest: JwtStrategy.extractJWT,
+      jwtFromRequest: ExtractJwt.fromExtractors([JwtStrategy.extractJWT]),
+      // jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.PRIVATE_KEY || 'SECRET',
+      secretOrKey: process.env.PRIVATE_KEY,
     });
   }
 
-  private static extractJWT(req: RequestType): string | null {
-    if (req.cookies && 'token' in req.cookies && req.cookies.token.length > 0) {
-      console.log(req.cookies.token);
-
-      return req.cookies.token;
-    }
-    return null;
+  async validate(payload: any) {
+    return { id: payload.sub, email: payload.email };
   }
 
-  async validate(payload: any) {
-    return { userId: payload.sub, username: payload.username };
+  private static extractJWT(req: Request): string | null {
+    const token = req.cookies['token'];
+
+    if (!token) return null;
+
+    return token;
   }
 }

@@ -2,6 +2,9 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpException,
+  HttpStatus,
   Post,
   Request,
   Res,
@@ -10,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
-import { CreateUserDto } from 'src/users/users.model';
+import { CreateUserDto, User } from 'src/users/users.model';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
 
@@ -18,11 +21,14 @@ import { LocalAuthGuard } from './local-auth.guard';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(LocalAuthGuard)
   @Post('/login')
+  @HttpCode(200)
   async login(@Request() req, @Response({ passthrough: true }) res) {
     const access_token = await this.authService.login(req.user);
+
     res.cookie('token', access_token.token);
+    return 'Success';
   }
 
   // @Post('/login')
@@ -35,8 +41,15 @@ export class AuthController {
     return this.authService.register(userDto);
   }
 
-  @Get('signout')
+  @UseGuards(AuthGuard('jwt'))
+  @Get('/me')
+  getMe(@Request() req: any): Promise<User> {
+    return this.authService.me(req.cookies['token'] ?? undefined);
+  }
+
+  @Post('/logout')
   async logout(@Res({ passthrough: true }) res) {
     res.cookie('token', '', { expires: new Date() });
+    throw new HttpException('Forbidden', HttpStatus.NO_CONTENT);
   }
 }

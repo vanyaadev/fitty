@@ -17,11 +17,7 @@ export class AuthService {
   ) {}
 
   async login(user: any) {
-    return this.generateToken({
-      email: user.email,
-      id: user.id,
-      roles: user.roles,
-    });
+    return this.generateToken(user);
   }
 
   async register(userDto: CreateUserDto) {
@@ -42,7 +38,8 @@ export class AuthService {
   private async generateToken(user: any) {
     const payload = { email: user.email, id: user.id, roles: user.roles };
     return {
-      token: this.jwtService.sign(payload),
+      token: this.jwtService.sign(payload, { secret: process.env.PRIVATE_KEY }),
+      user,
     };
   }
 
@@ -58,5 +55,10 @@ export class AuthService {
     }
 
     return null;
+  }
+
+  async me(token: string | undefined): Promise<User> {
+    const payload = this.jwtService.decode(token);
+    return this.userService.getUserByEmail(payload['email']);
   }
 }
