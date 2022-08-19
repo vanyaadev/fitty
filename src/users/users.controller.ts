@@ -8,9 +8,9 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Request } from 'express';
 import { Roles, RolesGuard } from 'src/auth/roles.guard';
-import { AddRoleDto, BanUserDto, CreateUserDto } from './users.model';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -19,8 +19,8 @@ export class UsersController {
 
   @UsePipes(ValidationPipe)
   @Post()
-  create(@Body() userDto: CreateUserDto) {
-    return this.userService.createUser(userDto);
+  create(@Body() data: Prisma.UserCreateInput) {
+    return this.userService.createUser(data);
   }
 
   @Get()
@@ -31,14 +31,14 @@ export class UsersController {
   // @Roles('ADMIN')
   // @UseGuards(RolesGuard)
   @Post('/role')
-  addRole(@Body() dto: AddRoleDto) {
-    return this.userService.addRole(dto);
+  addRole(@Body() data: { value: string; userId: number }) {
+    return this.userService.addRole(data);
   }
 
   @Roles('ADMIN')
   @UseGuards(RolesGuard)
   @Post('/ban')
-  banUser(@Body() dto: BanUserDto) {
-    return this.userService.banUser(dto);
+  banUser(@Body() data: { userId: number; banReason: string }) {
+    return this.userService.banUser(data);
   }
 }

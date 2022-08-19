@@ -1,60 +1,117 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { userInfo } from 'os';
-import { Role } from 'src/roles/roles.model';
-
+import { Prisma } from '@prisma/client';
+import { PrismaService } from 'src/prisma.service';
 import { RolesService } from 'src/roles/roles.service';
-import { UserRoles } from 'src/roles/user-roles.model';
 
-import { AddRoleDto, BanUserDto, CreateUserDto, User } from './users.model';
+const mapRolesToUser = (user) => ({
+  ...user,
+  roles: user.roles.map((role) => role.role),
+});
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(User) private userModel: typeof User,
     private roleService: RolesService,
+    private prisma: PrismaService,
   ) {}
 
-  async createUser(dto: CreateUserDto) {
-    const user = await this.userModel.create(dto);
-    const role = await this.roleService.getRoleByValue('USER');
-    await user.addRole(role);
+  async createUser(data: Prisma.UserCreateInput) {
+    let roleUser = await this.prisma.role.findFirst({
+      where: {
+        value: 'USER',
+      },
+    });
 
-    return user;
+    if (!roleUser) {
+      roleUser = await this.prisma.role.create({
+        data: {
+          value: 'USER',
+          description: 'User with limited number of rights',
+        },
+      });
+    }
+
+    return this.prisma.user.create({
+      data: {
+        email: data.email,
+        password: data.password,
+        roles: {
+          create: [
+            {
+              role: {
+                connect: {
+                  id: roleUser.id,
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
   }
 
   async getAllUsers() {
-    const users = await this.userModel.findAll({ include: { all: true } });
-    return users;
+    const users = await this.prisma.user.findMany({
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+      },
+    });
+
+    return users.map(mapRolesToUser);
   }
 
   async getUserByEmail(email: string) {
-    const user = await this.userModel.findOne({
+    const user = await this.prisma.user.findUnique({
       where: { email },
-      include: { all: true },
+      include: { roles: true },
     });
     return user;
   }
 
-  async addRole(dto: AddRoleDto) {
-    const user = await this.userModel.findByPk(dto.userId);
-    const role = await this.roleService.getRoleByValue(dto.value);
+  async addRole({ value, userId }: { value: string; userId: number }) {
+    const role = await this.roleService.getRoleByValue(value);
 
-    if (role && user) {
-      await user.addRole(role);
-      return dto;
+    if (role) {
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          roles: {
+            create: [
+              {
+                role: {
+                  connect: { id: role.id },
+                },
+              },
+            ],
+          },
+        },
+        include: {
+          roles: {
+            include: { role: true },
+          },
+        },
+      });
+
+      if (user) return mapRolesToUser(user);
     }
 
     throw new HttpException('User or role was not found', HttpStatus.NOT_FOUND);
   }
-  async banUser(dto: BanUserDto) {
-    const user = await this.userModel.findByPk(dto.userId);
+  async banUser(data: { userId: number; banReason: string }) {
+    const user = await this.prisma.user.update({
+      where: { id: data.userId },
+      data: {
+        banned: true,
+        banReason: data.banReason,
+      },
+    });
 
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
-    user.banned = true;
-    user.banReason = dto.banReason;
-    await user.save();
     return user;
   }
 }

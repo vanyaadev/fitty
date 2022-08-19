@@ -1,13 +1,9 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { CreateUserDto, User } from 'src/users/users.model';
+import { User } from '@prisma/client';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -20,15 +16,15 @@ export class AuthService {
     return this.generateToken(user);
   }
 
-  async register(userDto: CreateUserDto) {
-    const candidate = await this.userService.getUserByEmail(userDto.email);
+  async register(data: Prisma.UserCreateInput) {
+    const candidate = await this.userService.getUserByEmail(data.email);
     if (candidate) {
       throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
     }
 
-    const hashPassword = await bcrypt.hash(userDto.password, 5);
+    const hashPassword = await bcrypt.hash(data.password, 5);
     const user = await this.userService.createUser({
-      ...userDto,
+      ...data,
       password: hashPassword,
     });
 
@@ -43,12 +39,9 @@ export class AuthService {
     };
   }
 
-  async validateUser(userDto: CreateUserDto) {
-    const user = await this.userService.getUserByEmail(userDto.email);
-    const passwordMatches = await bcrypt.compare(
-      userDto.password,
-      user.password,
-    );
+  async validateUser(data: Prisma.UserCreateInput) {
+    const user = await this.userService.getUserByEmail(data.email);
+    const passwordMatches = await bcrypt.compare(data.password, user.password);
 
     if (user && passwordMatches) {
       return user;

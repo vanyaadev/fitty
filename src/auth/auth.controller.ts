@@ -12,10 +12,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-
-import { CreateUserDto, User } from 'src/users/users.model';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
+import { Prisma, User } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -31,14 +30,9 @@ export class AuthController {
     return 'Success';
   }
 
-  // @Post('/login')
-  // login(@Body() userDto: CreateUserDto) {
-  //   return this.authService.login(userDto);
-  // }
-
   @Post('/register')
-  register(@Body() userDto: CreateUserDto) {
-    return this.authService.register(userDto);
+  register(@Body() data: Prisma.UserCreateInput) {
+    return this.authService.register(data);
   }
 
   @UseGuards(AuthGuard('jwt'))

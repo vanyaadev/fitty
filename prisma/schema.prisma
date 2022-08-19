@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          Int           @id @default(autoincrement())
+  value       String        @unique @db.VarChar(255)
+  description String        @db.VarChar(255)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  users       UserOnRoles[]
+}
+
+model UserOnRoles {
+  roleId     Int
+  userId     Int
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+
+  @@unique([roleId, userId])
+}
+
+model User {
+  id        Int             @id @default(autoincrement())
+  email     String          @unique @db.VarChar(255)
+  password  String          @db.VarChar(255)
+  banned    Boolean?        @default(false)
+  banReason String?         @default(dbgenerated("false")) @db.VarChar(255)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  roles     UserOnRoles[]
+  classes   UserOnClasses[]
+}
+
+model Class {
+  id           Int             @id @default(autoincrement())
+  name         String          @unique @db.VarChar(255)
+  participants UserOnClasses[]
+}
+
+model UserOnClasses {
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  class      Class    @relation(fields: [classId], references: [id])
+  classId    Int
+  enrolledAt DateTime @default(now())
+
+  @@id([userId, classId])
+}

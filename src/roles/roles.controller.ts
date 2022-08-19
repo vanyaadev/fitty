@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { CreateRoleDto } from './roles.model';
+import { Prisma } from '@prisma/client';
 import { RolesService } from './roles.service';
 
 @Controller('roles')
@@ -12,8 +12,8 @@ export class RolesController {
   }
 
   @Post()
-  create(@Body() dto: CreateRoleDto) {
-    return this.roleService.createRole(dto);
+  create(@Body() data: Prisma.RoleCreateInput) {
+    return this.roleService.createRole(data);
   }
 
   @Get('/:value')
