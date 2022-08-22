@@ -2,15 +2,18 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  ParseIntPipe,
   Post,
   Req,
+  Request,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { Prisma } from '@prisma/client';
-import { Request } from 'express';
-import { Roles, RolesGuard } from 'src/auth/roles.guard';
+import { Roles, RolesGuard } from 'src/auth/guards/roles.guard';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -31,7 +34,7 @@ export class UsersController {
   // @Roles('ADMIN')
   // @UseGuards(RolesGuard)
   @Post('/role')
-  addRole(@Body() data: { value: string; userId: number }) {
+  addRole(@Body() data) {
     return this.userService.addRole(data);
   }
 
@@ -40,5 +43,14 @@ export class UsersController {
   @Post('/ban')
   banUser(@Body() data: { userId: number; banReason: string }) {
     return this.userService.banUser(data);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('/enroll/:classId')
+  enrollToClass(
+    @Request() req,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
+    return this.userService.enrollToClass(classId, req.user?.id);
   }
 }

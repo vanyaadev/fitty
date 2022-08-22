@@ -27,21 +27,36 @@ model UserOnRoles {
 }
 
 model User {
-  id        Int             @id @default(autoincrement())
-  email     String          @unique @db.VarChar(255)
-  password  String          @db.VarChar(255)
-  banned    Boolean?        @default(false)
-  banReason String?         @default(dbgenerated("false")) @db.VarChar(255)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  roles     UserOnRoles[]
-  classes   UserOnClasses[]
+  id                 Int             @id @default(autoincrement())
+  email              String          @unique @db.VarChar(255)
+  password           String          @db.VarChar(255)
+  banned             Boolean?        @default(false)
+  banReason          String?         @default(dbgenerated("false")) @db.VarChar(255)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  roles              UserOnRoles[]
+  classes            UserOnClasses[]
+  instructor_classes Class[]
 }
 
 model Class {
-  id           Int             @id @default(autoincrement())
-  name         String          @unique @db.VarChar(255)
-  participants UserOnClasses[]
+  id                  Int             @id @default(autoincrement())
+  name                String          @unique @db.VarChar(255)
+  startDate           DateTime
+  endDate             DateTime
+  maximumParticipants Int
+  instructorId        Int?
+  placeId             Int
+  participants        UserOnClasses[]
+  instructor          User?           @relation(fields: [instructorId], references: [id])
+  place               Place           @relation(fields: [placeId], references: [id])
+}
+
+model Place {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique @db.VarChar(255)
+  city  String
+  Class Class[]
 }
 
 model UserOnClasses {

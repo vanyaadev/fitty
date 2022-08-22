@@ -6,9 +6,11 @@ import { RolesModule } from './roles/roles.module';
 import { AuthModule } from './auth/auth.module';
 import { ClassesController } from './classes/classes.controller';
 import { ClassesModule } from './classes/classes.module';
+import { PlacesController } from './places/places.controller';
+import { PlacesModule } from './places/places.module';
 
 @Module({
-  controllers: [ClassesController],
+  controllers: [ClassesController, PlacesController],
   providers: [],
   imports: [
     ConfigModule.forRoot({
@@ -18,6 +20,7 @@ import { ClassesModule } from './classes/classes.module';
     RolesModule,
     AuthModule,
     ClassesModule,
+    PlacesModule,
   ],
 })
 export class AppModule {}
