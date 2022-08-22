@@ -88,7 +88,6 @@ export class UsersService {
       where: { email },
       include: includeRoles,
     });
-    console.log(user);
 
     return mapRolesToUser(user);
   }
@@ -98,7 +97,6 @@ export class UsersService {
       const role = await this.prisma.role.findUniqueOrThrow({
         where: { value: roleValue },
       });
-      console.log(role);
 
       const user = await this.prisma.user.update({
         where: { id: userId },
