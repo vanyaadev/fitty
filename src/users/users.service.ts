@@ -86,13 +86,20 @@ export class UsersService {
   async getUserByEmail(email: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
-      include: { roles: true },
+      include: includeRoles,
     });
-    return user;
+    console.log(user);
+
+    return mapRolesToUser(user);
   }
 
-  async addRole({ roleId, userId }: { roleId: number; userId: number }) {
+  async addRole({ roleValue, userId }: { roleValue: string; userId: number }) {
     try {
+      const role = await this.prisma.role.findUniqueOrThrow({
+        where: { value: roleValue },
+      });
+      console.log(role);
+
       const user = await this.prisma.user.update({
         where: { id: userId },
         data: {
@@ -100,7 +107,7 @@ export class UsersService {
             create: [
               {
                 role: {
-                  connect: { id: roleId },
+                  connect: { id: role.id },
                 },
               },
             ],
