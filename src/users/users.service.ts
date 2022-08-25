@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
+import { userInfo } from 'os';
 import { PrismaService } from 'src/prisma.service';
 import { RolesService } from 'src/roles/roles.service';
 
@@ -13,10 +14,31 @@ const mapClassToUser = (user) => ({
   classes: user.classes.map((class_) => class_.class),
 });
 
+const mapRolesAndClassesToUser = (user) => ({
+  ...user,
+  classes: user.classes.map((class_) => class_.class),
+  roles: user.roles.map((role) => role.role),
+});
+
+const mapClientOrInstructorInfo = (user) => ({
+  ...user,
+  banned: user?.client.banned,
+  banReason: user?.client.banReason,
+  classes: user.client
+    ? user.client.classes.map((class_) => class_.class)
+    : user.instructor.classes.map((class_) => class_.class),
+});
 const includeRoles = {
   roles: {
     include: {
       role: true,
+    },
+  },
+};
+const includeClasses = {
+  classes: {
+    include: {
+      class: true,
     },
   },
 };
@@ -31,53 +53,71 @@ export class UsersService {
   async getUserById(id: number) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: includeRoles,
+      include: { ...includeRoles, ...includeClasses },
     });
 
-    return mapRolesToUser(user);
+    return mapRolesAndClassesToUser(user);
   }
 
-  async createUser(data: Prisma.UserCreateInput) {
-    let roleUser = await this.prisma.role.findFirst({
+  async createUser(data: Prisma.UserCreateInput, isClient: boolean) {
+    let role = await this.prisma.role.findFirst({
       where: {
-        value: 'USER',
+        value: isClient ? 'USER' : 'INSTRUCTOR',
       },
     });
 
-    if (!roleUser) {
-      roleUser = await this.prisma.role.create({
+    if (!role) {
+      role = await this.prisma.role.create({
         data: {
-          value: 'USER',
-          description: 'User with limited number of rights',
+          value: isClient ? 'USER' : 'INSTRUCTOR',
+          description: isClient
+            ? 'User with limited number of rights'
+            : 'Instructor with group classes',
         },
       });
     }
 
-    const user = await this.prisma.user.create({
+    const prismaSchema: any = isClient
+      ? this.prisma.client
+      : this.prisma.instructor;
+
+    const user = await prismaSchema.create({
       data: {
-        email: data.email,
-        password: data.password,
-        roles: {
-          create: [
-            {
-              role: {
-                connect: {
-                  id: roleUser.id,
+        user: {
+          create: {
+            email: data.email,
+            password: data.password,
+            roles: {
+              create: [
+                {
+                  role: {
+                    connect: {
+                      id: role.id,
+                    },
+                  },
                 },
-              },
+              ],
             },
-          ],
+          },
         },
       },
-      include: includeRoles,
+      include: {
+        user: {
+          include: includeRoles,
+        },
+      },
     });
 
-    return mapRolesToUser(user);
+    return user;
   }
 
   async getAllUsers() {
     const users = await this.prisma.user.findMany({
-      include: includeRoles,
+      include: {
+        ...includeRoles,
+        client: { include: { classes: true } },
+        instructor: { include: { classes: true } },
+      },
     });
 
     return users.map(mapRolesToUser);
@@ -86,10 +126,10 @@ export class UsersService {
   async getUserByEmail(email: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
-      include: includeRoles,
+      include: { ...includeRoles },
     });
 
-    return mapRolesToUser(user);
+    return user ? mapRolesToUser(user) : null;
   }
 
   async addRole({ roleValue, userId }: { roleValue: string; userId: number }) {
@@ -111,7 +151,7 @@ export class UsersService {
             ],
           },
         },
-        include: includeRoles,
+        include: { ...includeRoles },
       });
       return mapRolesToUser(user);
     } catch (e) {
@@ -129,8 +169,8 @@ export class UsersService {
   }
 
   async enrollToClass(classId: number, userId: number) {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
+    const user = await this.prisma.client.update({
+      where: { userId },
       data: {
         classes: {
           create: [
@@ -142,11 +182,7 @@ export class UsersService {
           ],
         },
       },
-      include: {
-        classes: {
-          include: { class: true },
-        },
-      },
+      include: { ...includeClasses },
     });
 
     if (user) return mapClassToUser(user);
@@ -154,17 +190,30 @@ export class UsersService {
     throw new HttpException('User or role was not found', HttpStatus.NOT_FOUND);
   }
 
-  async banUser(data: { userId: number; banReason: string }) {
-    const user = await this.prisma.user.update({
-      where: { id: data.userId },
+  async unEnrollFromClass(classId: number, userId: number) {
+    return this.prisma.client.update({
+      where: { userId },
       data: {
-        banned: true,
-        banReason: data.banReason,
+        classes: {
+          deleteMany: { classId },
+        },
       },
+      include: { classes: true },
     });
+  }
 
-    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+  async banUser(data: { userId: number; banReason: string }) {
+    // const user = await this.prisma.user.update({
+    //   where: { id: data.userId },
+    //   data: {
+    //     banned: true,
+    //     banReason: data.banReason,
+    //   },
+    // });
 
-    return user;
+    // if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+
+    // return user;
+    return null;
   }
 }

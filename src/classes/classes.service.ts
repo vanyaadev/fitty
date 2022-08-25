@@ -10,8 +10,16 @@ export class ClassesService {
     private prisma: PrismaService,
   ) {}
 
-  getClasses() {
-    return this.prisma.class.findMany();
+  async getClasses(userId) {
+    const classes = await this.prisma.class.findMany({
+      include: { participants: { include: { client: true } } },
+    });
+
+    return classes.map((cl) => ({
+      ...cl,
+      numberParticipants: cl.participants.length,
+      enrolled: cl.participants.some((p) => p.clientId === userId),
+    }));
   }
 
   async createClass(data: Prisma.ClassCreateInput) {
@@ -33,7 +41,7 @@ export class ClassesService {
     }
   }
 
-  async assignInstructor(data: { className: string; instructorId: number }) {
+  async assignInstructor(data: { classId: number; instructorId: number }) {
     const user = await this.usersService.getUserById(data.instructorId);
 
     if (!user || !user.roles.some((role) => role.value === 'USER'))
@@ -42,20 +50,21 @@ export class ClassesService {
         HttpStatus.NOT_FOUND,
       );
 
-    return this.prisma.class.update({
-      where: {
-        name: data.className,
-      },
-      data: {
-        instructor: {
-          connect: {
-            id: data.instructorId,
-          },
-        },
-      },
-      include: {
-        instructor: true,
-      },
-    });
+    // return this.prisma.class.update({
+    //   where: {
+    //     id: data.classId,
+    //   },
+    //   data: {
+    //     instructor: {
+    //       connect: {
+    //         id: data.instructorId,
+    //       },
+    //     },
+    //   },
+    //   include: {
+    //     instructor: true,
+    //   },
+    // });
+    return null;
   }
 }

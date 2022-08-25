@@ -19,37 +19,50 @@ model Role {
 model UserOnRoles {
   roleId     Int
   userId     Int
+  assignedAt DateTime @default(now())
   role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assignedAt DateTime @default(now())
 
   @@unique([roleId, userId])
 }
 
 model User {
-  id                 Int             @id @default(autoincrement())
-  email              String          @unique @db.VarChar(255)
-  password           String          @db.VarChar(255)
-  banned             Boolean?        @default(false)
-  banReason          String?         @default(dbgenerated("false")) @db.VarChar(255)
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  roles              UserOnRoles[]
-  classes            UserOnClasses[]
-  instructor_classes Class[]
+  id         Int           @id @default(autoincrement())
+  email      String        @unique @db.VarChar(255)
+  password   String        @db.VarChar(255)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  roles      UserOnRoles[]
+  instructor Instructor?
+  client     Client?
+}
+
+model Client {
+  userId    Int               @id
+  banned    Boolean?          @default(false)
+  banReason String?           @default(dbgenerated("false")) @db.VarChar(255)
+  user      User              @relation(fields: [userId], references: [id])
+  classes   ClientOnClasses[]
+}
+
+model Instructor {
+  userId  Int     @id
+  user    User    @relation(fields: [userId], references: [id])
+  classes Class[]
 }
 
 model Class {
-  id                  Int             @id @default(autoincrement())
-  name                String          @unique @db.VarChar(255)
+  id                  Int               @id @default(autoincrement())
+  name                String            @db.VarChar(255)
+  description         String            @db.VarChar(255)
   startDate           DateTime
   endDate             DateTime
   maximumParticipants Int
-  instructorId        Int?
+  instructorId        Int
   placeId             Int
-  participants        UserOnClasses[]
-  instructor          User?           @relation(fields: [instructorId], references: [id])
-  place               Place           @relation(fields: [placeId], references: [id])
+  participants        ClientOnClasses[]
+  place               Place             @relation(fields: [placeId], references: [id])
+  instructor          Instructor        @relation(fields: [instructorId], references: [userId])
 }
 
 model Place {
@@ -59,12 +72,12 @@ model Place {
   Class Class[]
 }
 
-model UserOnClasses {
-  user       User     @relation(fields: [userId], references: [id])
-  userId     Int
-  class      Class    @relation(fields: [classId], references: [id])
+model ClientOnClasses {
   classId    Int
   enrolledAt DateTime @default(now())
+  clientId   Int
+  class      Class    @relation(fields: [classId], references: [id])
+  client     Client   @relation(fields: [clientId], references: [userId])
 
-  @@id([userId, classId])
+  @@id([clientId, classId])
 }

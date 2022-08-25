@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -21,9 +22,15 @@ export class UsersController {
   constructor(private userService: UsersService) {}
 
   @UsePipes(ValidationPipe)
-  @Post()
-  create(@Body() data: Prisma.UserCreateInput) {
-    return this.userService.createUser(data);
+  @Post('/client')
+  createClient(@Body() data: Prisma.UserCreateInput) {
+    return this.userService.createUser(data, true);
+  }
+
+  @UsePipes(ValidationPipe)
+  @Post('/instructor')
+  createInstructor(@Body() data: Prisma.UserCreateInput) {
+    return this.userService.createUser(data, false);
   }
 
   @Get()
@@ -46,11 +53,20 @@ export class UsersController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Post('/enroll/:classId')
+  @Post('/class/:classId')
   enrollToClass(
     @Request() req,
     @Param('classId', ParseIntPipe) classId: number,
   ) {
     return this.userService.enrollToClass(classId, req.user?.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete('/class/:classId')
+  unEnrollFromClass(
+    @Request() req,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
+    return this.userService.unEnrollFromClass(classId, req.user?.id);
   }
 }

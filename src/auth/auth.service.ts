@@ -23,12 +23,15 @@ export class AuthService {
     }
 
     const hashPassword = await bcrypt.hash(data.password, 5);
-    const user = await this.userService.createUser({
-      ...data,
-      password: hashPassword,
-    });
+    const client = await this.userService.createUser(
+      {
+        ...data,
+        password: hashPassword,
+      },
+      true,
+    );
 
-    return this.generateToken(user);
+    return this.generateToken(client.user);
   }
 
   private async generateToken(user: any) {
