@@ -15,6 +15,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Prisma, User } from '@prisma/client';
+import { Roles, RolesGuard } from './guards/roles.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -32,7 +33,14 @@ export class AuthController {
 
   @Post('/register')
   register(@Body() data: Prisma.UserCreateInput) {
-    return this.authService.register(data);
+    return this.authService.register(data, true);
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
+  @Post('/registerInstructor')
+  registerInstructor(@Body() data: Prisma.UserCreateInput) {
+    return this.authService.register(data, false);
   }
 
   @UseGuards(AuthGuard('jwt'))

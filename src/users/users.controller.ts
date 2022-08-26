@@ -33,9 +33,16 @@ export class UsersController {
     return this.userService.createUser(data, false);
   }
 
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
   @Get()
   getAll(@Req() request: Request) {
     return this.userService.getAllUsers();
+  }
+
+  @Get('/instructors')
+  getAllInstructors() {
+    return this.userService.getAllInstructors();
   }
 
   // @Roles('ADMIN')

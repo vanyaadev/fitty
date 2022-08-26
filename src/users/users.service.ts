@@ -1,6 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
-import { userInfo } from 'os';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import { RolesService } from 'src/roles/roles.service';
 
@@ -11,23 +10,27 @@ const mapRolesToUser = (user) => ({
 
 const mapClassToUser = (user) => ({
   ...user,
-  classes: user.classes.map((class_) => class_.class),
+  classes: user.classes.map((cl) => cl.class),
 });
 
 const mapRolesAndClassesToUser = (user) => ({
   ...user,
-  classes: user.classes.map((class_) => class_.class),
+  classes: user.classes.map((cl) => cl.class),
   roles: user.roles.map((role) => role.role),
 });
 
 const mapClientOrInstructorInfo = (user) => ({
   ...user,
-  banned: user?.client.banned,
-  banReason: user?.client.banReason,
+  instructor: undefined,
+  client: undefined,
+  isInstructor: !!user.instructor,
+  banned: user?.client?.banned,
+  banReason: user?.client?.banReason,
   classes: user.client
-    ? user.client.classes.map((class_) => class_.class)
-    : user.instructor.classes.map((class_) => class_.class),
+    ? user.client.classes.map((cl) => cl.class)
+    : user.instructor?.classes,
 });
+
 const includeRoles = {
   roles: {
     include: {
@@ -87,6 +90,8 @@ export class UsersService {
           create: {
             email: data.email,
             password: data.password,
+            name: data.name,
+            surname: data.surname,
             roles: {
               create: [
                 {
@@ -121,6 +126,20 @@ export class UsersService {
     });
 
     return users.map(mapRolesToUser);
+  }
+
+  async getAllInstructors() {
+    const instructors = await this.prisma.user.findMany({
+      where: {
+        instructor: {
+          userId: {},
+        },
+      },
+      include: {
+        instructor: { include: { classes: true } },
+      },
+    });
+    return instructors.map(mapClientOrInstructorInfo);
   }
 
   async getUserByEmail(email: string) {

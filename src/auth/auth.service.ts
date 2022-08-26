@@ -16,7 +16,7 @@ export class AuthService {
     return this.generateToken(user);
   }
 
-  async register(data: Prisma.UserCreateInput) {
+  async register(data: Prisma.UserCreateInput, isClient = true) {
     const candidate = await this.userService.getUserByEmail(data.email);
     if (candidate) {
       throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
@@ -28,21 +28,25 @@ export class AuthService {
         ...data,
         password: hashPassword,
       },
-      true,
+      isClient,
     );
 
     return this.generateToken(client.user);
   }
 
   private async generateToken(user: any) {
-    const payload = { email: user.email, id: user.id, roles: user.roles };
+    const payload = {
+      email: user.email,
+      id: user.id,
+      roles: user.roles,
+    };
     return {
       token: this.jwtService.sign(payload, { secret: process.env.PRIVATE_KEY }),
       user,
     };
   }
 
-  async validateUser(data: Prisma.UserCreateInput) {
+  async validateUser(data: { email: string; password: string }) {
     const user = await this.userService.getUserByEmail(data.email);
     const passwordMatches = await bcrypt.compare(data.password, user.password);
 
