@@ -222,17 +222,30 @@ export class UsersService {
   }
 
   async banUser(data: { userId: number; banReason: string }) {
-    // const user = await this.prisma.user.update({
-    //   where: { id: data.userId },
-    //   data: {
-    //     banned: true,
-    //     banReason: data.banReason,
-    //   },
-    // });
+    const user = await this.prisma.client.update({
+      where: { userId: data.userId },
+      data: {
+        banned: true,
+        banReason: data.banReason,
+      },
+    });
 
-    // if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
-    // return user;
-    return null;
+    return user;
+  }
+
+  async unBanUser(data: { userId: number }) {
+    const user = await this.prisma.client.update({
+      where: { userId: data.userId },
+      data: {
+        banned: false,
+        banReason: '',
+      },
+    });
+
+    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+
+    return user;
   }
 }

@@ -42,7 +42,7 @@ model User {
 model Client {
   userId    Int               @id
   banned    Boolean?          @default(false)
-  banReason String?           @default(dbgenerated("false")) @db.VarChar(255)
+  banReason String?           @db.VarChar(255)
   user      User              @relation(fields: [userId], references: [id])
   classes   ClientOnClasses[]
 }

@@ -59,6 +59,13 @@ export class UsersController {
     return this.userService.banUser(data);
   }
 
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
+  @Post('/unban')
+  unBanUser(@Body() data: { userId: number }) {
+    return this.userService.unBanUser(data);
+  }
+
   @UseGuards(AuthGuard('jwt'))
   @Post('/class/:classId')
   enrollToClass(
