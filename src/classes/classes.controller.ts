@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Put,
   Request,
@@ -29,5 +30,10 @@ export class ClassesController {
   @Put('/instructor')
   assignInstructor(@Body() data: { classId: number; instructorId: number }) {
     return this.classesService.assignInstructor(data);
+  }
+
+  @Patch('')
+  updateClass(@Body() data) {
+    return this.classesService.updateClass(data);
   }
 }

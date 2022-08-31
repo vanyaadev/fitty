@@ -41,6 +41,15 @@ export class ClassesService {
     }
   }
 
+  async updateClass({ id, ...restArgs }) {
+    return this.prisma.class.update({
+      where: {
+        id,
+      },
+      data: restArgs,
+    });
+  }
+
   async assignInstructor(data: { classId: number; instructorId: number }) {
     const user = await this.usersService.getUserById(data.instructorId);
 
