@@ -51,13 +51,13 @@ export class ClassesService {
   }
 
   async assignInstructor(data: { classId: number; instructorId: number }) {
-    const user = await this.usersService.getUserById(data.instructorId);
+    // const user = await this.usersService.getUserById(data.instructorId);
 
-    if (!user || !user.roles.some((role) => role.value === 'USER'))
-      throw new HttpException(
-        'User not found or user is not a instructor',
-        HttpStatus.NOT_FOUND,
-      );
+    // if (!user || !user.roles.some((role) => role.value === 'USER'))
+    //   throw new HttpException(
+    //     'User not found or user is not a instructor',
+    //     HttpStatus.NOT_FOUND,
+    //   );
 
     // return this.prisma.class.update({
     //   where: {

@@ -1,0 +1,473 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+directive @upper on FIELD_DEFINITION
+
+type RoleCount {
+  users: Int!
+}
+
+type Role {
+  id: ID!
+  value: String!
+  description: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  users: [UserOnRoles!]
+  _count: RoleCount!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type UserOnRoles {
+  roleId: Int!
+  userId: Int!
+  assignedAt: DateTime!
+  role: Role!
+  user: User!
+}
+
+type ClientCount {
+  classes: Int!
+}
+
+type Client {
+  userId: ID!
+  banned: Boolean
+  banReason: String
+  user: User!
+  classes: [ClientOnClasses!]
+  _count: ClientCount!
+}
+
+type ClientOnClasses {
+  classId: Int!
+  enrolledAt: DateTime!
+  clientId: Int!
+  class: Class!
+  client: Client!
+}
+
+type PlaceCount {
+  Class: Int!
+}
+
+type Place {
+  id: ID!
+  name: String!
+  city: String!
+  Class: [Class!]
+  _count: PlaceCount!
+}
+
+type ClassCount {
+  participants: Int!
+}
+
+type Class {
+  id: ID!
+  name: String!
+  description: String!
+  startDate: DateTime!
+  endDate: DateTime!
+  maximumParticipants: Int!
+  instructorId: Int!
+  placeId: Int!
+  participants: [ClientOnClasses!]
+  place: Place!
+  instructor: Instructor!
+  _count: ClassCount!
+}
+
+type InstructorCount {
+  classes: Int!
+}
+
+type Instructor {
+  userId: ID!
+  user: User!
+  classes: [Class!]
+  _count: InstructorCount!
+}
+
+type UserCount {
+  roles: Int!
+}
+
+type User {
+  id: ID!
+  email: String!
+  name: String!
+  surname: String!
+  password: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  roles: [UserOnRoles!]
+  instructor: Instructor
+  client: Client
+  _count: UserCount!
+}
+
+type LoginOutput {
+  access_token: String!
+  user: User!
+}
+
+type Query {
+  users: [User!]!
+  user(id: Int!): User!
+  role(value: String!): Role!
+  roles: [Role!]!
+}
+
+type Mutation {
+  createUser(createUserInput: UserCreateInput!, isClient: Boolean!): User!
+  login(loginUserInput: LoginInput!): LoginOutput!
+}
+
+input UserCreateInput {
+  email: String!
+  name: String!
+  surname: String!
+  password: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+  roles: UserOnRolesCreateNestedManyWithoutUserInput
+  instructor: InstructorCreateNestedOneWithoutUserInput
+  client: ClientCreateNestedOneWithoutUserInput
+}
+
+input UserOnRolesCreateNestedManyWithoutUserInput {
+  create: [UserOnRolesCreateWithoutUserInput!]
+  connectOrCreate: [UserOnRolesCreateOrConnectWithoutUserInput!]
+  createMany: UserOnRolesCreateManyUserInputEnvelope
+  connect: [UserOnRolesWhereUniqueInput!]
+}
+
+input UserOnRolesCreateWithoutUserInput {
+  assignedAt: DateTime
+  role: RoleCreateNestedOneWithoutUsersInput!
+}
+
+input RoleCreateNestedOneWithoutUsersInput {
+  create: RoleCreateWithoutUsersInput
+  connectOrCreate: RoleCreateOrConnectWithoutUsersInput
+  connect: RoleWhereUniqueInput
+}
+
+input RoleCreateWithoutUsersInput {
+  value: String!
+  description: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RoleCreateOrConnectWithoutUsersInput {
+  where: RoleWhereUniqueInput!
+  create: RoleCreateWithoutUsersInput!
+}
+
+input RoleWhereUniqueInput {
+  id: Int
+  value: String
+}
+
+input UserOnRolesCreateOrConnectWithoutUserInput {
+  where: UserOnRolesWhereUniqueInput!
+  create: UserOnRolesCreateWithoutUserInput!
+}
+
+input UserOnRolesWhereUniqueInput {
+  roleId_userId: UserOnRolesRoleIdUserIdCompoundUniqueInput
+}
+
+input UserOnRolesRoleIdUserIdCompoundUniqueInput {
+  roleId: Int!
+  userId: Int!
+}
+
+input UserOnRolesCreateManyUserInputEnvelope {
+  data: [UserOnRolesCreateManyUserInput!]!
+  skipDuplicates: Boolean
+}
+
+input UserOnRolesCreateManyUserInput {
+  roleId: Int!
+  assignedAt: DateTime
+}
+
+input InstructorCreateNestedOneWithoutUserInput {
+  create: InstructorCreateWithoutUserInput
+  connectOrCreate: InstructorCreateOrConnectWithoutUserInput
+  connect: InstructorWhereUniqueInput
+}
+
+input InstructorCreateWithoutUserInput {
+  classes: ClassCreateNestedManyWithoutInstructorInput
+}
+
+input ClassCreateNestedManyWithoutInstructorInput {
+  create: [ClassCreateWithoutInstructorInput!]
+  connectOrCreate: [ClassCreateOrConnectWithoutInstructorInput!]
+  createMany: ClassCreateManyInstructorInputEnvelope
+  connect: [ClassWhereUniqueInput!]
+}
+
+input ClassCreateWithoutInstructorInput {
+  name: String!
+  description: String!
+  startDate: DateTime!
+  endDate: DateTime!
+  maximumParticipants: Int!
+  participants: ClientOnClassesCreateNestedManyWithoutClassInput
+  place: PlaceCreateNestedOneWithoutClassInput!
+}
+
+input ClientOnClassesCreateNestedManyWithoutClassInput {
+  create: [ClientOnClassesCreateWithoutClassInput!]
+  connectOrCreate: [ClientOnClassesCreateOrConnectWithoutClassInput!]
+  createMany: ClientOnClassesCreateManyClassInputEnvelope
+  connect: [ClientOnClassesWhereUniqueInput!]
+}
+
+input ClientOnClassesCreateWithoutClassInput {
+  enrolledAt: DateTime
+  client: ClientCreateNestedOneWithoutClassesInput!
+}
+
+input ClientCreateNestedOneWithoutClassesInput {
+  create: ClientCreateWithoutClassesInput
+  connectOrCreate: ClientCreateOrConnectWithoutClassesInput
+  connect: ClientWhereUniqueInput
+}
+
+input ClientCreateWithoutClassesInput {
+  banned: Boolean
+  banReason: String
+  user: UserCreateNestedOneWithoutClientInput!
+}
+
+input UserCreateNestedOneWithoutClientInput {
+  create: UserCreateWithoutClientInput
+  connectOrCreate: UserCreateOrConnectWithoutClientInput
+  connect: UserWhereUniqueInput
+}
+
+input UserCreateWithoutClientInput {
+  email: String!
+  name: String!
+  surname: String!
+  password: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+  roles: UserOnRolesCreateNestedManyWithoutUserInput
+  instructor: InstructorCreateNestedOneWithoutUserInput
+}
+
+input UserCreateOrConnectWithoutClientInput {
+  where: UserWhereUniqueInput!
+  create: UserCreateWithoutClientInput!
+}
+
+input UserWhereUniqueInput {
+  id: Int
+  email: String
+}
+
+input ClientCreateOrConnectWithoutClassesInput {
+  where: ClientWhereUniqueInput!
+  create: ClientCreateWithoutClassesInput!
+}
+
+input ClientWhereUniqueInput {
+  userId: Int
+}
+
+input ClientOnClassesCreateOrConnectWithoutClassInput {
+  where: ClientOnClassesWhereUniqueInput!
+  create: ClientOnClassesCreateWithoutClassInput!
+}
+
+input ClientOnClassesWhereUniqueInput {
+  clientId_classId: ClientOnClassesClientIdClassIdCompoundUniqueInput
+}
+
+input ClientOnClassesClientIdClassIdCompoundUniqueInput {
+  clientId: Int!
+  classId: Int!
+}
+
+input ClientOnClassesCreateManyClassInputEnvelope {
+  data: [ClientOnClassesCreateManyClassInput!]!
+  skipDuplicates: Boolean
+}
+
+input ClientOnClassesCreateManyClassInput {
+  enrolledAt: DateTime
+  clientId: Int!
+}
+
+input PlaceCreateNestedOneWithoutClassInput {
+  create: PlaceCreateWithoutClassInput
+  connectOrCreate: PlaceCreateOrConnectWithoutClassInput
+  connect: PlaceWhereUniqueInput
+}
+
+input PlaceCreateWithoutClassInput {
+  name: String!
+  city: String!
+}
+
+input PlaceCreateOrConnectWithoutClassInput {
+  where: PlaceWhereUniqueInput!
+  create: PlaceCreateWithoutClassInput!
+}
+
+input PlaceWhereUniqueInput {
+  id: Int
+  name: String
+}
+
+input ClassCreateOrConnectWithoutInstructorInput {
+  where: ClassWhereUniqueInput!
+  create: ClassCreateWithoutInstructorInput!
+}
+
+input ClassWhereUniqueInput {
+  id: Int
+}
+
+input ClassCreateManyInstructorInputEnvelope {
+  data: [ClassCreateManyInstructorInput!]!
+  skipDuplicates: Boolean
+}
+
+input ClassCreateManyInstructorInput {
+  id: Int
+  name: String!
+  description: String!
+  startDate: DateTime!
+  endDate: DateTime!
+  maximumParticipants: Int!
+  placeId: Int!
+}
+
+input InstructorCreateOrConnectWithoutUserInput {
+  where: InstructorWhereUniqueInput!
+  create: InstructorCreateWithoutUserInput!
+}
+
+input InstructorWhereUniqueInput {
+  userId: Int
+}
+
+input ClientCreateNestedOneWithoutUserInput {
+  create: ClientCreateWithoutUserInput
+  connectOrCreate: ClientCreateOrConnectWithoutUserInput
+  connect: ClientWhereUniqueInput
+}
+
+input ClientCreateWithoutUserInput {
+  banned: Boolean
+  banReason: String
+  classes: ClientOnClassesCreateNestedManyWithoutClientInput
+}
+
+input ClientOnClassesCreateNestedManyWithoutClientInput {
+  create: [ClientOnClassesCreateWithoutClientInput!]
+  connectOrCreate: [ClientOnClassesCreateOrConnectWithoutClientInput!]
+  createMany: ClientOnClassesCreateManyClientInputEnvelope
+  connect: [ClientOnClassesWhereUniqueInput!]
+}
+
+input ClientOnClassesCreateWithoutClientInput {
+  enrolledAt: DateTime
+  class: ClassCreateNestedOneWithoutParticipantsInput!
+}
+
+input ClassCreateNestedOneWithoutParticipantsInput {
+  create: ClassCreateWithoutParticipantsInput
+  connectOrCreate: ClassCreateOrConnectWithoutParticipantsInput
+  connect: ClassWhereUniqueInput
+}
+
+input ClassCreateWithoutParticipantsInput {
+  name: String!
+  description: String!
+  startDate: DateTime!
+  endDate: DateTime!
+  maximumParticipants: Int!
+  place: PlaceCreateNestedOneWithoutClassInput!
+  instructor: InstructorCreateNestedOneWithoutClassesInput!
+}
+
+input InstructorCreateNestedOneWithoutClassesInput {
+  create: InstructorCreateWithoutClassesInput
+  connectOrCreate: InstructorCreateOrConnectWithoutClassesInput
+  connect: InstructorWhereUniqueInput
+}
+
+input InstructorCreateWithoutClassesInput {
+  user: UserCreateNestedOneWithoutInstructorInput!
+}
+
+input UserCreateNestedOneWithoutInstructorInput {
+  create: UserCreateWithoutInstructorInput
+  connectOrCreate: UserCreateOrConnectWithoutInstructorInput
+  connect: UserWhereUniqueInput
+}
+
+input UserCreateWithoutInstructorInput {
+  email: String!
+  name: String!
+  surname: String!
+  password: String!
+  createdAt: DateTime
+  updatedAt: DateTime
+  roles: UserOnRolesCreateNestedManyWithoutUserInput
+  client: ClientCreateNestedOneWithoutUserInput
+}
+
+input UserCreateOrConnectWithoutInstructorInput {
+  where: UserWhereUniqueInput!
+  create: UserCreateWithoutInstructorInput!
+}
+
+input InstructorCreateOrConnectWithoutClassesInput {
+  where: InstructorWhereUniqueInput!
+  create: InstructorCreateWithoutClassesInput!
+}
+
+input ClassCreateOrConnectWithoutParticipantsInput {
+  where: ClassWhereUniqueInput!
+  create: ClassCreateWithoutParticipantsInput!
+}
+
+input ClientOnClassesCreateOrConnectWithoutClientInput {
+  where: ClientOnClassesWhereUniqueInput!
+  create: ClientOnClassesCreateWithoutClientInput!
+}
+
+input ClientOnClassesCreateManyClientInputEnvelope {
+  data: [ClientOnClassesCreateManyClientInput!]!
+  skipDuplicates: Boolean
+}
+
+input ClientOnClassesCreateManyClientInput {
+  classId: Int!
+  enrolledAt: DateTime
+}
+
+input ClientCreateOrConnectWithoutUserInput {
+  where: ClientWhereUniqueInput!
+  create: ClientCreateWithoutUserInput!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}

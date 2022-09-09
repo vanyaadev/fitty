@@ -1,9 +1,8 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcryptjs';
-import { Prisma } from '@prisma/client';
+import { JwtService } from '@nestjs/jwt';
+import { LoginInput } from './dto/login-input';
 
 @Injectable()
 export class AuthService {
@@ -12,53 +11,31 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async login(user: any) {
-    return this.generateToken(user);
+  async login(user: LoginInput) {
+    const token = this.generateToken(user);
+    return token;
   }
-
-  async register(data: Prisma.UserCreateInput, isClient = true) {
-    const candidate = await this.userService.getUserByEmail(data.email);
-    if (candidate) {
-      throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
-    }
-
-    const hashPassword = await bcrypt.hash(data.password, 5);
-    const client = await this.userService.createUser(
-      {
-        ...data,
-        password: hashPassword,
-      },
-      isClient,
-    );
-
-    return this.generateToken(client.user);
-  }
-
-  private async generateToken(user: any) {
+  private async generateToken(user: LoginInput) {
     const payload = {
       email: user.email,
-      id: user.id,
-      roles: user.roles,
     };
     return {
-      token: this.jwtService.sign(payload, { secret: process.env.PRIVATE_KEY }),
+      access_token: this.jwtService.sign(payload, {
+        secret: process.env.PRIVATE_KEY,
+      }),
       user,
     };
   }
 
-  async validateUser(data: { email: string; password: string }) {
-    const user = await this.userService.getUserByEmail(data.email);
-    const passwordMatches = await bcrypt.compare(data.password, user.password);
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.userService.findOneByEmail(email);
+    const passwordMatches = await bcrypt.compare(password, user.password);
 
     if (user && passwordMatches) {
-      return user;
+      const { password, ...secureUser } = user;
+      return secureUser;
     }
 
     return null;
-  }
-
-  async me(token: string | undefined): Promise<User> {
-    const payload = this.jwtService.decode(token);
-    return this.userService.getUserByEmail(payload['email']);
   }
 }

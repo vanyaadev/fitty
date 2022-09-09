@@ -1,35 +1,8 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { UserCreateInput } from 'src/@generated/user/user-create.input';
 import { PrismaService } from 'src/prisma.service';
-import { RolesService } from 'src/roles/roles.service';
-
-const mapRolesToUser = (user) => ({
-  ...user,
-  roles: user.roles.map((role) => role.role),
-});
-
-const mapClassToUser = (user) => ({
-  ...user,
-  classes: user.classes.map((cl) => cl.class),
-});
-
-const mapRolesAndClassesToUser = (user) => ({
-  ...user,
-  classes: user.classes.map((cl) => cl.class),
-  roles: user.roles.map((role) => role.role),
-});
-
-const mapClientOrInstructorInfo = (user) => ({
-  ...user,
-  instructor: undefined,
-  client: undefined,
-  isInstructor: !!user.instructor,
-  banned: user?.client?.banned,
-  banReason: user?.client?.banReason,
-  classes: user.client
-    ? user.client.classes.map((cl) => cl.class)
-    : user.instructor?.classes,
-});
+// import { UpdateUserInput } from './dto/update-user.input';
 
 const includeRoles = {
   roles: {
@@ -38,31 +11,12 @@ const includeRoles = {
     },
   },
 };
-const includeClasses = {
-  classes: {
-    include: {
-      class: true,
-    },
-  },
-};
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private roleService: RolesService,
-    private prisma: PrismaService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async getUserById(id: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      include: { ...includeRoles, ...includeClasses },
-    });
-
-    return mapRolesAndClassesToUser(user);
-  }
-
-  async createUser(data: Prisma.UserCreateInput, isClient: boolean) {
+  async create(createUserInput: UserCreateInput, isClient: boolean) {
     let role = await this.prisma.role.findFirst({
       where: {
         value: isClient ? 'USER' : 'INSTRUCTOR',
@@ -88,10 +42,10 @@ export class UsersService {
       data: {
         user: {
           create: {
-            email: data.email,
-            password: data.password,
-            name: data.name,
-            surname: data.surname,
+            email: createUserInput.email,
+            password: createUserInput.password,
+            name: createUserInput.name,
+            surname: createUserInput.surname,
             roles: {
               create: [
                 {
@@ -116,136 +70,79 @@ export class UsersService {
     return user;
   }
 
-  async getAllUsers() {
-    const users = await this.prisma.user.findMany({
-      include: {
-        ...includeRoles,
-        client: { include: { classes: true } },
-        instructor: { include: { classes: true } },
-      },
-    });
-
-    return users.map(mapRolesToUser);
+  findAll() {
+    return this.prisma.user.findMany();
   }
 
-  async getAllInstructors() {
-    const instructors = await this.prisma.user.findMany({
-      where: {
-        instructor: {
-          userId: {},
-        },
-      },
-      include: {
-        instructor: { include: { classes: true } },
-      },
+  findOne(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: { client: true, instructor: true },
     });
-    return instructors.map(mapClientOrInstructorInfo);
   }
 
-  async getUserByEmail(email: string) {
-    const user = await this.prisma.user.findUnique({
+  findOneByEmail(email: string) {
+    return this.prisma.user.findUnique({
       where: { email },
-      include: { ...includeRoles },
-    });
-
-    return user ? mapRolesToUser(user) : null;
-  }
-
-  async addRole({ roleValue, userId }: { roleValue: string; userId: number }) {
-    try {
-      const role = await this.prisma.role.findUniqueOrThrow({
-        where: { value: roleValue },
-      });
-
-      const user = await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          roles: {
-            create: [
-              {
-                role: {
-                  connect: { id: role.id },
-                },
-              },
-            ],
-          },
-        },
-        include: { ...includeRoles },
-      });
-      return mapRolesToUser(user);
-    } catch (e) {
-      if (e.code === 'P2002')
-        throw new HttpException(
-          'There is a unique constraint violation',
-          HttpStatus.CONFLICT,
-        );
-      else
-        throw new HttpException(
-          'User or role is not found',
-          HttpStatus.NOT_FOUND,
-        );
-    }
-  }
-
-  async enrollToClass(classId: number, userId: number) {
-    const user = await this.prisma.client.update({
-      where: { userId },
-      data: {
-        classes: {
-          create: [
-            {
-              class: {
-                connect: { id: classId },
-              },
-            },
-          ],
-        },
-      },
-      include: { ...includeClasses },
-    });
-
-    if (user) return mapClassToUser(user);
-
-    throw new HttpException('User or role was not found', HttpStatus.NOT_FOUND);
-  }
-
-  async unEnrollFromClass(classId: number, userId: number) {
-    return this.prisma.client.update({
-      where: { userId },
-      data: {
-        classes: {
-          deleteMany: { classId },
-        },
-      },
-      include: { classes: true },
+      include: { client: true, instructor: true },
     });
   }
 
-  async banUser(data: { userId: number; banReason: string }) {
-    const user = await this.prisma.client.update({
-      where: { userId: data.userId },
-      data: {
-        banned: true,
-        banReason: data.banReason,
-      },
-    });
+  // update(id: number, updateUserInput: UpdateUserInput) {
+  //   return `This action updates a #${id} user`;
+  // }
 
-    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-
-    return user;
-  }
-
-  async unBanUser(data: { userId: number }) {
-    const user = await this.prisma.client.update({
-      where: { userId: data.userId },
-      data: {
-        banned: false,
-        banReason: '',
-      },
-    });
-
-    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-
-    return user;
-  }
+  // remove(id: number) {
+  //   return `This action removes a #${id} user`;
+  // }
 }
+
+// async login(user: any) {
+//   return this.generateToken(user);
+// }
+
+// async register(data: Prisma.UserCreateInput, isClient = true) {
+//   const candidate = await this.userService.getUserByEmail(data.email);
+//   if (candidate) {
+//     throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
+//   }
+
+//   const hashPassword = await bcrypt.hash(data.password, 5);
+//   const client = await this.userService.createUser(
+//     {
+//       ...data,
+//       password: hashPassword,
+//     },
+//     isClient,
+//   );
+
+//   return this.generateToken(client.user);
+// }
+
+// private async generateToken(user: any) {
+//   const payload = {
+//     email: user.email,
+//     id: user.id,
+//     roles: user.roles,
+//   };
+//   return {
+//     token: this.jwtService.sign(payload, { secret: process.env.PRIVATE_KEY }),
+//     user,
+//   };
+// }
+
+// async validateUser(data: { email: string; password: string }) {
+//   const user = await this.userService.getUserByEmail(data.email);
+//   const passwordMatches = await bcrypt.compare(data.password, user.password);
+
+//   if (user && passwordMatches) {
+//     return user;
+//   }
+
+//   return null;
+// }
+
+// async me(token: string | undefined): Promise<User> {
+//   const payload = this.jwtService.decode(token);
+//   return this.userService.getUserByEmail(payload['email']);
+// }

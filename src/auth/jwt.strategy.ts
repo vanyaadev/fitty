@@ -1,8 +1,13 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { UsersService } from 'src/users/users.service';
+import { GqlExecutionContext } from '@nestjs/graphql';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -15,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(data) {
-    const user = await this.userService.getUserByEmail(data.email);
+    const user = await this.userService.findOneByEmail(data.email);
     if (!user) {
       throw new UnauthorizedException();
     }
@@ -23,7 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   private static extractJWT(req: Request): string | null {
-    const token = req.cookies['token'];
+    const token = req.cookies['access_token'];
 
     if (!token) return null;
 
